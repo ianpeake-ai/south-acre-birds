@@ -25,6 +25,7 @@ that caught voices is never put online.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -340,6 +341,13 @@ def main() -> int:
     args = ap.parse_args()
 
     WORK.mkdir(exist_ok=True)
+    # one publish at a time: the timer and a manual run must not race each other
+    lock = open(WORK / ".lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        log("another publish is already running - leaving it to finish")
+        return 0
     conf = read_conf()
     clips_ok = privacy_filter_on(conf) or args.clips_without_privacy_filter
     if not clips_ok:

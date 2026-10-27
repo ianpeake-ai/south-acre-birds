@@ -87,10 +87,12 @@ WantedBy=timers.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now birdweb-publish.timer
 
 echo "==> first publish"
 /usr/bin/python3 "${APP_DIR}/publish_web.py" --force
+
+# start the timer only after the first publish, so the two can't collide
+sudo systemctl enable --now birdweb-publish.timer
 
 echo
 echo "Done. If this is the first time, turn on GitHub Pages:"

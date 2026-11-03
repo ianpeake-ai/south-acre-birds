@@ -1,10 +1,10 @@
 # main.py - South Acre bird frame
 # Pimoroni Inky Frame 7.3" Spectra (Pico 2 W), Pimoroni MicroPython 1.27
 #
-# Each wake between 07:00 and 21:00 (every 30 minutes) it joins the wifi,
+# Each wake between 06:00 and 22:30 (every 30 minutes) it joins the wifi,
 # sets its clock, fetches today.jpg from the listener Pi, and redraws the
 # panel ONLY if the picture has changed - a redraw is the big battery cost.
-# Then it powers down until the next wake. Overnight it sleeps through to 07:00.
+# Then it powers down until the next wake. Overnight it sleeps through to 06:00.
 #
 # British Summer Time is worked out from the date: nothing to change in
 # March or October.
@@ -25,8 +25,8 @@ from picographics import PicoGraphics, DISPLAY_INKY_FRAME_SPECTRA_7
 
 # ---- settings ---------------------------------------------------------------
 IMAGE_URL    = "http://192.168.4.55:8090/today.jpg"   # the Pi's reserved address
-WAKE_START   = 7      # first wake of the day (local time)
-WAKE_END     = 21     # no wakes from this hour until WAKE_START
+WAKE_START   = 6      # first wake of the day (local time)
+WAKE_END     = 23     # no wakes from this hour until WAKE_START (last: 22:30)
 REFRESH_MIN  = 30     # minutes between wakes in the day
 WIFI_TIMEOUT = 30     # seconds to wait for the wifi
 # -----------------------------------------------------------------------------

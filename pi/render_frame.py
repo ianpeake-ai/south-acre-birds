@@ -370,7 +370,7 @@ def main() -> int:
     ap.add_argument("--hours", type=int, default=24,
                     help="How many hours of birds to show (e.g. --hours 96 to test with past days)")
     ap.add_argument("--timeout", type=int, default=45, help="API timeout, seconds")
-    ap.add_argument("--quiet-start", type=int, default=22, help="Quiet-hours start (local hour)")
+    ap.add_argument("--quiet-start", type=int, default=23, help="Quiet-hours start (local hour)")
     ap.add_argument("--quiet-end", type=int, default=6, help="Quiet-hours end (local hour)")
     ap.add_argument("--force", action="store_true", help="Render even if unchanged / quiet hours")
     ap.add_argument("--state", type=Path, default=home / ".birdframe-state.json")

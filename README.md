@@ -14,7 +14,7 @@ the same day on a phone, anywhere, with each bird's song.
 | Pi | `pi/install_frame_server.sh` | the render timer, and the image server on :8090 the frame fetches from |
 | Pi | `pi/publish_web.py` | every 15 min, if anything changed, sends today's birds to the `gh-pages` branch |
 | Pi | `pi/install_birdweb.sh` | sets up the deploy key and the publishing timer |
-| Frame | `frame/main.py` | wakes 07:00–21:00 every 30 min, fetches the picture, redraws only on change |
+| Frame | `frame/main.py` | wakes 06:00–22:30 every 30 min, fetches the picture, redraws only on change |
 | Frame | `frame/test_draw.py` | draws `today.jpg` from the frame's memory, no wifi needed |
 | GitHub Pages | `site/` | the app itself (installable on a phone's home screen, works offline) |
 

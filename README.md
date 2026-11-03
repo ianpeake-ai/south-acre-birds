@@ -10,6 +10,7 @@ the same day on a phone, anywhere, with each bird's song.
 | Where | File | Job |
 |---|---|---|
 | Pi | `pi/render_frame.py` | photographs the station's collage every 15 min; writes the frame's picture and a full-size collage for the app |
+| Pi | `pi/shoot_checked.py` | runs the station's own photographer, counts the birds in each photo against the station's list, and retakes any photo with birds missing |
 | Pi | `pi/install_frame_server.sh` | the render timer, and the image server on :8090 the frame fetches from |
 | Pi | `pi/publish_web.py` | every 15 min, if anything changed, sends today's birds to the `gh-pages` branch |
 | Pi | `pi/install_birdweb.sh` | sets up the deploy key and the publishing timer |

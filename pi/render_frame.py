@@ -10,7 +10,9 @@ Each run it:
        outside quiet hours - so the panel is never redrawn for nothing
     2. photographs the station's live collage page with the maker's shoot.py
        (a headless browser), so the birds are packed exactly as on the website
-       and rearranged afresh each time
+       and rearranged afresh each time. shoot_checked.py wraps it: every photo
+       is checked bird by bird against the station's list and retaken if any
+       are missing, and a short photo never replaces a fuller one
     3. crops the collage out of that screenshot, draws the title above it in
        three lines (TITLE_LINES, below), and fits both to a 480x800 portrait
        page on the page's own paper colour
@@ -122,8 +124,23 @@ def _volunteer_for_oom() -> None:
         pass
 
 
-def shoot(args, eyebrow: str, headline: str, out_png: Path) -> None:
+class ShortPhoto(Exception):
+    """A photo was taken, but some birds the station heard are not in it."""
+    def __init__(self, message: str, report: dict):
+        super().__init__(message)
+        self.report = report
+
+
+def shoot(args, eyebrow: str, headline: str, out_png: Path, species: list[dict]) -> dict:
+    """Photograph the collage through shoot_checked.py, which counts the birds
+    in every photo against `species` and retakes short ones. Returns its
+    report; raises ShortPhoto if the best photo still lacks birds."""
+    expect = out_png.with_name("expect.json")
+    report = out_png.with_name("report.json")
+    expect.write_text(json.dumps([s["sci"] for s in species if s.get("sci")]))
     cmd = ["nice", "-n", "10", str(args.shoot_python), str(args.shoot_script),
+           "--maker-shoot", str(args.maker_shoot), "--expect", str(expect),
+           "--report", str(report), "--tries", str(args.shoot_tries),
            "--url", args.base,
            "--width", str(args.shot_width), "--height", str(args.shot_height),
            "--dsf", str(args.dsf), "--collage-vh", str(args.collage_vh),
@@ -138,11 +155,19 @@ def shoot(args, eyebrow: str, headline: str, out_png: Path) -> None:
         cmd += ["--lowercase"]
     if args.bird_names:
         cmd += ["--bird-names"]          # the collage's own name labels
-    r = subprocess.run(cmd, cwd=str(args.shoot_script.parent), timeout=args.shoot_timeout,
+    r = subprocess.run(cmd, cwd=str(args.maker_shoot.parent), timeout=args.shoot_timeout,
                        preexec_fn=_volunteer_for_oom, capture_output=True, text=True)
+    try:
+        rep = json.loads(report.read_text())
+    except Exception:
+        rep = {}
+    if r.returncode == 3 and out_png.exists():
+        tail = (r.stderr or "").strip().splitlines()[-1:]
+        raise ShortPhoto(tail[0] if tail else "birds missing from the photo", rep)
     if r.returncode != 0 or not out_png.exists():
         tail = (r.stderr or r.stdout or "").strip().splitlines()[-8:]
-        raise RuntimeError("shoot.py failed:\n    " + "\n    ".join(tail))
+        raise RuntimeError("shoot failed:\n    " + "\n    ".join(tail))
+    return rep
 
 
 # --- cropping the screenshot ------------------------------------------------
@@ -351,7 +376,12 @@ def main() -> int:
     ap.add_argument("--state", type=Path, default=home / ".birdframe-state.json")
     # the camera
     ap.add_argument("--shoot-python", type=Path, default=home / "shootenv" / "bin" / "python")
-    ap.add_argument("--shoot-script", type=Path, default=home / "BirdNET-Pi" / "frame" / "shoot.py")
+    ap.add_argument("--shoot-script", type=Path, default=Path(__file__).resolve().parent / "shoot_checked.py",
+                    help="The head-counting wrapper round the maker's shoot.py")
+    ap.add_argument("--maker-shoot", type=Path, default=home / "BirdNET-Pi" / "frame" / "shoot.py",
+                    help="The station's own photographer")
+    ap.add_argument("--shoot-tries", type=int, default=3,
+                    help="Page loads before settling for a photo with birds missing")
     ap.add_argument("--shot-width", type=int, default=600)
     ap.add_argument("--shot-height", type=int, default=1000)
     ap.add_argument("--dsf", type=int, default=2,
@@ -377,29 +407,43 @@ def main() -> int:
 
     day = now.strftime("%Y-%m-%d")
     sig = signature(species, day)
-    prev = ""
+    state = {}
     if args.state.exists():
         try:
-            prev = json.loads(args.state.read_text()).get("sig", "")
+            state = json.loads(args.state.read_text())
         except Exception:
             pass
-    if sig == prev and not args.force:
+    if sig == state.get("sig") and not args.force:
         print(f"no change ({len(species)} species) - panel already current")
         return 0
 
     eyebrow = args.subtitle or now.strftime("%A %-d %B")
     args.out.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
+    complete = True
     with tempfile.TemporaryDirectory() as tmp:
         shot_path = Path(tmp) / "shot.png"
         try:
-            shoot(args, eyebrow, args.title, shot_path)
+            rep = shoot(args, eyebrow, args.title, shot_path, species)
+        except ShortPhoto as e:
+            # Birds missing even after retakes. Use this photo only if it beats
+            # the picture already up (or that one is yesterday's), and don't
+            # record it as done, so the next run tries again for a full one.
+            complete = False
+            rep = e.report
+            drawn = ((rep or {}).get("best") or {}).get("drawn", 0)
+            have = state.get("drawn", 0) if state.get("day") == day else -1
+            if drawn <= have:
+                print(f"short photo ({e}); keeping the fuller picture already up", file=sys.stderr)
+                return 1
+            print(f"short photo ({e}); using it until a full one comes", file=sys.stderr)
         except Exception as e:
-            # leave yesterday's good picture in place; the timer retries
+            # leave the last good picture in place; the timer retries
             print(f"error: {e}", file=sys.stderr)
             return 1
         shot = Image.open(shot_path)
         shot.load()
+    best = (rep or {}).get("best") or {}
 
     page = compose(shot, args.dsf, load_nest(args.nest), empty=not species,
                    eyebrow=eyebrow)
@@ -416,11 +460,17 @@ def main() -> int:
         save_atomic(rgb.crop(cbox), collage_path, format="JPEG", quality=88)
     elif collage_path.exists():
         collage_path.unlink()
-    args.state.write_text(json.dumps({"sig": sig, "when": time.time(),
-                                      "species": len(species)}))
-    print(f"rendered {len(species)} species in {time.time() - t0:.0f}s -> "
+    args.state.write_text(json.dumps({
+        "sig": sig if complete else "",          # a short photo is never "done"
+        "when": time.time(), "day": day, "species": len(species),
+        "drawn": best.get("drawn", 0), "missing": best.get("missing", []),
+        "no_art": best.get("no_art", [])}))
+    tally = f"drew {best['drawn']} of {best['expected']}" if best else "nest"
+    if best.get("no_art"):
+        tally += f"; no drawing yet: {', '.join(best['no_art'])}"
+    print(f"rendered {len(species)} species ({tally}) in {time.time() - t0:.0f}s -> "
           f"{args.out / 'today.jpg'} (+ today-portrait.jpg, today-preview.png)")
-    return 0
+    return 0 if complete else 3
 
 
 if __name__ == "__main__":

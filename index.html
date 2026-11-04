@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Birds of South Acre</title>
+<meta name="description" content="The birds heard today in the garden at South Acre.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ece7d8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="South Acre">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+  <header class="masthead">
+    <p class="eyebrow" id="date">&nbsp;</p>
+    <h1 class="title">
+      <span class="big">The Birds</span>
+      <span class="of">of</span>
+      <span class="big">South Acre</span>
+    </h1>
+    <p class="status" id="status">Listening…</p>
+  </header>
+
+  <p class="notice" id="notice" hidden></p>
+
+  <figure class="collage" id="collage" hidden>
+    <button class="collage-open" id="collage-open" aria-label="Show today's birds full screen">
+      <img id="collage-img" alt="Today's birds, drawn together">
+    </button>
+  </figure>
+
+  <figure class="nest" id="nest" hidden>
+    <img id="nest-img" alt="An empty nest">
+    <figcaption>The first bird hasn't sung yet.</figcaption>
+  </figure>
+
+  <section class="heard" id="heard" hidden>
+    <h2 class="section-title"><span>Heard today</span></h2>
+    <ol class="birds" id="birds"></ol>
+  </section>
+
+  <section class="heard residents" id="residents" hidden>
+    <h2 class="section-title"><span>The residents</span></h2>
+    <ol class="birds" id="resident-birds"></ol>
+  </section>
+
+  <footer class="colophon">
+    <p>Heard from under the eaves at South Acre.<br>Identified by BirdNET, drawn in the house style.</p>
+    <p class="updated" id="updated"></p>
+  </footer>
+</main>
+
+<dialog class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close">×</button>
+  <img id="lightbox-img" alt="">
+</dialog>
+
+<audio id="player" preload="none"></audio>
+
+<template id="bird-row">
+  <li class="bird">
+    <div class="bird-art"><img alt="" loading="lazy" decoding="async"></div>
+    <div class="bird-text">
+      <p class="bird-name"><span class="com"></span><span class="first-ever" hidden>first record</span></p>
+      <p class="sci"></p>
+      <p class="meta"></p>
+    </div>
+    <button class="play" type="button" hidden><span class="play-icon" aria-hidden="true"></span><span class="visually-hidden">Play song</span></button>
+  </li>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
